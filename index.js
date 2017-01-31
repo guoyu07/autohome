@@ -5,7 +5,7 @@ const toPinyin = require("pinyin");
 const binaryParser = require("superagent-binary-parser");
 const cheerio = require("cheerio");
 const iconv = require("iconv-lite");
-
+const path = "2017/00/";
 const countries = [{
   name: "中国",
   code: "0_0-0.0_0.0-0-0-0-0-0-1-0-0"
@@ -44,14 +44,9 @@ const countries = [{
   code: "0_0-0.0_0.0-0-0-0-0-0-12-0-0"
 }];
 const uri = "http://www.autohome.com.cn/car/";
-// 根据现在链接排重
 const hasDownloads = [];
 
 const createNonceStr = () => Math.random().toString(36).substr(2, 15);
-const createRandomName = (str = Date.now() + "") => {
-  str = str + createNonceStr();
-  return shuffle(str.split("")).join("");
-};
 /**
  * 获取html 并转码
  */
@@ -71,7 +66,28 @@ const getHTML = uri => {
       });
   });
 };
-
+/**
+ * 保存图标
+ */
+const saveImage = (uri, filename) => {
+  // 替换成大图
+  uri = uri.replace(/\/50\//, "/100/");
+  const savePath = `./${path}${filename}`;
+  return new Promise((resolve, reject) => {
+    console.log("大图地址：", uri, "保存路径：", savePath);
+    const req = request.get(uri)
+    const stream = createWriteStream(savePath);
+    const a = req.pipe(stream);
+    a.on("close", () => {
+      hasDownloads.push(uri);
+      resolve();
+    });
+    a.on("error", error => {
+      console.log("save image error!");
+      reject(error);
+    });
+  });
+};
 (wrap(function*(){
   console.log('start......');
   let result = [];
@@ -91,7 +107,11 @@ const getHTML = uri => {
         for (let element2 of brands) {
           // 获取品牌名称
           const brand = $(element2).find("dt>div").text().trim();
+           const icon = $(element2).find("dt>a>img").attr("data-original");
           const types = $(element2).find("dd>ul>li>h4").get();
+          const filename = `${createNonceStr()}.jpg`;
+          console.log(`开始获取 【${brand}】 的图标 => 原始地址：${icon}`);
+          const data = yield saveImage(icon, filename);
           const pinyin = toPinyin(brand, {
              style: toPinyin.STYLE_NORMAL
           }).join("").toLowerCase();
@@ -99,6 +119,7 @@ const getHTML = uri => {
           result.push({ 
             id, 
             label, 
+            icon: `${path}${filename}`,
             countrie: countrie.name, 
             letter, 
             pinyin, 
@@ -115,6 +136,7 @@ const getHTML = uri => {
             result.push({ 
               id,
               label: label + type + pinyin,
+              icon: null,
               countrie: countrie.name, 
               letter: toPinyin(type, {
                 style: toPinyin.STYLE_FIRST_LETTER
