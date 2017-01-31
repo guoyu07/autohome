@@ -1,0 +1,14 @@
+{
+  "name": "autohome",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "cheerio": "^0.22.0",
+    "co": "^4.6.0",
+    "iconv-lite": "^0.4.15",
+    "pinyin": "^2.8.0",
+    "superagent": "^3.3.2",
+    "superagent-binary-parser": "^1.0.0"
+  }
+}
